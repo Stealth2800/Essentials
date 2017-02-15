@@ -5,6 +5,7 @@ import com.earth2me.essentials.CommandSource;
 import com.earth2me.essentials.User;
 import com.earth2me.essentials.utils.NumberUtil;
 import net.ess3.api.MaxMoneyException;
+import net.ess3.api.events.EconomyAccountUpdateEvent;
 import org.bukkit.Server;
 
 import java.math.BigDecimal;
@@ -83,6 +84,7 @@ public class Commandeco extends EssentialsLoopCommand {
     }
 
     private void set(BigDecimal amount, final User player, final CommandSource sender) throws MaxMoneyException {
+        BigDecimal money = player.getMoney();
         BigDecimal minBalance = ess.getSettings().getMinMoney();
         BigDecimal maxBalance = ess.getSettings().getMaxMoney();
         boolean underMinimum = (amount.compareTo(minBalance) < 0);
@@ -92,6 +94,9 @@ public class Commandeco extends EssentialsLoopCommand {
         if (sender != null) {
             sender.sendMessage(tl("setBalOthers", player.getDisplayName(), NumberUtil.displayCurrency(player.getMoney(), ess)));
         }
+
+        EconomyAccountUpdateEvent event = new EconomyAccountUpdateEvent(sender, player, money, player.getMoney());
+        ess.getServer().getPluginManager().callEvent(event);
     }
 
 

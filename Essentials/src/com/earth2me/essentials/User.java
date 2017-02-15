@@ -11,6 +11,8 @@ import com.earth2me.essentials.utils.NumberUtil;
 import net.ess3.api.IEssentials;
 import net.ess3.api.MaxMoneyException;
 import net.ess3.api.events.AfkStatusChangeEvent;
+import net.ess3.api.events.EconomyAccountUpdateEvent;
+import net.ess3.api.events.EconomyTransactionEvent;
 import net.ess3.api.events.JailStatusChangeEvent;
 import net.ess3.api.events.MuteStatusChangeEvent;
 import net.ess3.api.events.UserBalanceUpdateEvent;
@@ -142,11 +144,15 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
         if (value.signum() == 0) {
             return;
         }
+        BigDecimal origBalance = getMoney();
         setMoney(getMoney().add(value));
         sendMessage(tl("addedToAccount", NumberUtil.displayCurrency(value, ess)));
         if (initiator != null) {
             initiator.sendMessage(tl("addedToOthersAccount", NumberUtil.displayCurrency(value, ess), this.getDisplayName(), NumberUtil.displayCurrency(getMoney(), ess)));
         }
+
+        EconomyAccountUpdateEvent event = new EconomyAccountUpdateEvent(initiator, this, origBalance, getMoney());
+        ess.getServer().getPluginManager().callEvent(event);
     }
 
     @Override
@@ -158,6 +164,10 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
         if (canAfford(value)) {
             setMoney(getMoney().subtract(value));
             reciever.setMoney(reciever.getMoney().add(value));
+
+            EconomyTransactionEvent event = new EconomyTransactionEvent(this, reciever, value);
+            ess.getServer().getPluginManager().callEvent(event);
+
             sendMessage(tl("moneySentTo", NumberUtil.displayCurrency(value, ess), reciever.getDisplayName()));
             reciever.sendMessage(tl("moneyRecievedFrom", NumberUtil.displayCurrency(value, ess), getDisplayName()));
         } else {
@@ -175,6 +185,7 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
         if (value.signum() == 0) {
             return;
         }
+        BigDecimal origBalance = getMoney();
         try {
             setMoney(getMoney().subtract(value));
         } catch (MaxMoneyException ex) {
@@ -184,6 +195,9 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
         if (initiator != null) {
             initiator.sendMessage(tl("takenFromOthersAccount", NumberUtil.displayCurrency(value, ess), this.getDisplayName(), NumberUtil.displayCurrency(getMoney(), ess)));
         }
+
+        EconomyAccountUpdateEvent event = new EconomyAccountUpdateEvent(initiator, this, origBalance, getMoney());
+        ess.getServer().getPluginManager().callEvent(event);
     }
 
     @Override
@@ -413,11 +427,11 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
             return;
         }
         final BigDecimal oldBalance = _getMoney();
-        
+
         UserBalanceUpdateEvent updateEvent = new UserBalanceUpdateEvent(this.getBase(), oldBalance, value);
         ess.getServer().getPluginManager().callEvent(updateEvent);
         BigDecimal newBalance = updateEvent.getNewBalance();
-        
+
         if (Methods.hasMethod()) {
             try {
                 final Method method = Methods.getMethod();
@@ -466,7 +480,7 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
         _setAfk(set);
         updateAfkListName();
     }
-    
+
     private void updateAfkListName() {
         if (ess.getSettings().isAfkListName()) {
             if(isAfk()) {
@@ -530,7 +544,7 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
         if (getMuteTimeout() > 0 && getMuteTimeout() < currentTime && isMuted()) {
             final MuteStatusChangeEvent event = new MuteStatusChangeEvent(this, null, false);
             ess.getServer().getPluginManager().callEvent(event);
-            
+
             if (!event.isCancelled()) {
                 setMuteTimeout(0);
                 sendMessage(tl("canTalkAgain"));
@@ -556,7 +570,7 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
     }
 
     public void checkActivity() {
-        // Graceful time before the first afk check call. 
+        // Graceful time before the first afk check call.
         if (System.currentTimeMillis() - lastActivity <= 10000) {
             return;
         }
@@ -801,7 +815,7 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
     public String getName() {
         return this.getBase().getName();
     }
-    
+
     @Override public boolean isReachable() {
         return getBase().isOnline();
     }
