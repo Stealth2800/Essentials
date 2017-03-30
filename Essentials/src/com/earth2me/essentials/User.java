@@ -136,11 +136,15 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
 
     @Override
     public void giveMoney(final BigDecimal value) throws MaxMoneyException {
-        giveMoney(value, null);
+        giveMoney(value, null, true);
     }
 
     @Override
     public void giveMoney(final BigDecimal value, final CommandSource initiator) throws MaxMoneyException {
+        giveMoney(value, initiator, true);
+    }
+
+    public void giveMoney(final BigDecimal value, final CommandSource initiator, final boolean callEvent) throws MaxMoneyException {
         if (value.signum() == 0) {
             return;
         }
@@ -151,8 +155,10 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
             initiator.sendMessage(tl("addedToOthersAccount", NumberUtil.displayCurrency(value, ess), this.getDisplayName(), NumberUtil.displayCurrency(getMoney(), ess)));
         }
 
-        EconomyAccountUpdateEvent event = new EconomyAccountUpdateEvent(initiator, this, origBalance, getMoney());
-        ess.getServer().getPluginManager().callEvent(event);
+        if (callEvent) {
+            EconomyAccountUpdateEvent event = new EconomyAccountUpdateEvent(initiator, this, origBalance, getMoney());
+            ess.getServer().getPluginManager().callEvent(event);
+        }
     }
 
     @Override
@@ -177,11 +183,15 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
 
     @Override
     public void takeMoney(final BigDecimal value) {
-        takeMoney(value, null);
+        takeMoney(value, null, true);
     }
 
     @Override
     public void takeMoney(final BigDecimal value, final CommandSource initiator) {
+        takeMoney(value, initiator, true);
+    }
+
+    public void takeMoney(final BigDecimal value, final CommandSource initiator, final boolean callEvent) {
         if (value.signum() == 0) {
             return;
         }
@@ -196,8 +206,10 @@ public class User extends UserData implements Comparable<User>, IMessageRecipien
             initiator.sendMessage(tl("takenFromOthersAccount", NumberUtil.displayCurrency(value, ess), this.getDisplayName(), NumberUtil.displayCurrency(getMoney(), ess)));
         }
 
-        EconomyAccountUpdateEvent event = new EconomyAccountUpdateEvent(initiator, this, origBalance, getMoney());
-        ess.getServer().getPluginManager().callEvent(event);
+        if (callEvent) {
+            EconomyAccountUpdateEvent event = new EconomyAccountUpdateEvent(initiator, this, origBalance, getMoney());
+            ess.getServer().getPluginManager().callEvent(event);
+        }
     }
 
     @Override
